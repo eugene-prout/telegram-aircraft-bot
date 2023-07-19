@@ -15,13 +15,14 @@ COPY --chown=python:python requirements.txt requirements.txt
 
 RUN pip3 install --no-cache-dir  --user -r requirements.txt
 
-COPY --chown=python:python bot/ .
+COPY --chown=python:python bot/ ./bot
 
 ENV PYTHONUNBUFFERED="true" \
     PYTHONPATH="." \
     PATH="${PATH}:/home/python/.local/bin" \
     USER="python"
 
+COPY --chown=python:python config.py launch.py ./
 
 EXPOSE 443 80 88 8443
 
