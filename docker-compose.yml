@@ -1,0 +1,19 @@
+services:
+  web:
+    build:
+      context: "."
+    env_file:
+      - ".env"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "3s"
+    # tty: true
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_WEB_CPUS:-0}"
+          memory: "${DOCKER_WEB_MEMORY:-0}"
+    ports:
+      - "80:80"
+      - "88:88"
+      - "443:443"
+      - "8443:8443"
