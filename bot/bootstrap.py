@@ -17,7 +17,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def bootstrap():
-    token = settings.TELEGRAM_BOT_TOKEN
+    token = settings.TELEGRAM.TOKEN
 
     application = ApplicationBuilder().token(token).build()
 

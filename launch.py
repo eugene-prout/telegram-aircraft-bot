@@ -2,10 +2,11 @@ from bot.bootstrap import bootstrap
 from config import settings
 
 app = bootstrap()
-method = settings.TELEGRAM_METHOD
+method = settings.TELEGRAM.METHOD
 if method == "polling":
     app.run_polling()
 elif method == "webhook":
+    # Need to sort out this config
     url = settings.WEBHOOK_URL
     secret_token = settings.SECRET_TOKEN
     key = settings.KEY
