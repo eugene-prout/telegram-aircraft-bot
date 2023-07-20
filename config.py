@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 from dynaconf import Dynaconf
 
@@ -27,16 +28,15 @@ def load_azure_key_vault(obj, env=None, silent=False, key=None, filename=None):
     client = SecretClient(vault_url=key_vault_url, credential=credential)
     all_secrets = client.list_properties_of_secrets()
 
-    new_settings = {}
+    new_settings = defaultdict(dict)
 
     regex = re.compile(r"^(\w+)-(\w+)$")
-
     for s in all_secrets:
         name = s.name
         value = client.get_secret(name).value
 
         if m := regex.match(name):
-            new_settings[m.group(1)] = {m.group(2): value}
+            new_settings[m.group(1)].update({m.group(2): value})
         else:
             new_settings[name] = value
 
