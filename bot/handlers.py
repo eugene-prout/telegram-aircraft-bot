@@ -1,3 +1,4 @@
+import logging
 from telegram import Update
 from telegram.ext import (
     ContextTypes,
@@ -16,11 +17,14 @@ async def introduction(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Location message being handled")
     current_pos = (update.message.location.latitude, update.message.location.longitude)
 
     flights = create_flight_observations(
         load_flight_data(get_flights_in_box(*create_box(current_pos))), current_pos
     )
+
+    logging.info("%d flights nearby" % len(flights))
 
     if len(flights) == 0:
         await context.bot.send_message(
@@ -37,3 +41,4 @@ async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id, text=message
                 )
+    logging.info("Handler completed")
