@@ -47,4 +47,4 @@ settings = Dynaconf(
     envvar_prefix="DYNACONF",
 )
 
-load_azure_key_vault(settings)
+# load_azure_key_vault(settings)

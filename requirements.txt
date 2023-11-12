@@ -21,6 +21,7 @@ httpcore==0.17.3
 httpx==0.24.1
 idna==3.4
 isodate==0.6.1
+kaleido==0.2.1
 msal==1.22.0
 msal-extensions==1.0.0
 mypy-extensions==1.0.0
