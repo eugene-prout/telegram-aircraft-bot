@@ -1,22 +1,19 @@
 import logging
-import uuid
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    Message,
     Update,
 )
 from telegram.ext import (
     ContextTypes,
 )
-from bot.types import RepeatCallback
+from bot.types import AircraftInformationCallback, RepeatCallback
 
-import wikipedia
 
 from bot.services import (
-    FlightObservation,
+    GetAircraftInformation,
+    GetFlights,
     LatLong,
-    get_flights_near_user,
     convert_bearing_to_eight_point_cardinal,
 )
 
@@ -30,20 +27,22 @@ async def introduction(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="I'm a bot, send me your location to find nearby aircraft!",
     )
 
+
 # Upgrading to Python 3.12 would put this functionality into itertools, but 3.12 breaks python-telegram-bot.
 def batch(iterable, n=1):
     l = len(iterable)
     for ndx in range(0, l, n):
         yield iterable[ndx : min(ndx + n, l)]
 
+
 async def flight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("Flight callback fired")
 
     data = update.callback_query.data
-    if not isinstance(data, FlightObservation):
-        raise ValueError("Flight callback data is not of type FlightObservation")
+    if not isinstance(data, AircraftInformationCallback):
+        raise ValueError("Flight callback data is not of type string")
 
-    summary = wikipedia.summary(data.aircraft)
+    summary = GetAircraftInformation(data.name).description
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=summary)
 
@@ -67,7 +66,9 @@ async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message is None:
         raise ValueError("Update has no message")
 
-    current_pos = LatLong(update.message.location.latitude, update.message.location.longitude)
+    current_pos = LatLong(
+        update.message.location.latitude, update.message.location.longitude
+    )
     await handle_search(current_pos, context, update)
 
 
@@ -77,9 +78,11 @@ async def handle_search(
     update: Update,
 ):
     """
-    Handler for the core functionality of the bot. 
+    Handler for the core functionality of the bot.
     """
-    observations, radar_map = get_flights_near_user(current_pos)
+    data = GetFlights(current_pos)
+    observations = data.observations
+    radar_map = data.radar_map
 
     logging.info("%d flights nearby" % len(observations))
 
@@ -90,7 +93,7 @@ async def handle_search(
     else:
         # Send radar photo.
         await context.bot.send_photo(chat_id=update.effective_chat.id, photo=radar_map)
-        
+
         # Send flight details and photo, if available.
         for i, f in enumerate(observations, 1):
             message = f"{i}: {f.aircraft}\n{f.origin}->{f.destination}\nFlying:{convert_bearing_to_eight_point_cardinal(f.heading)}\nLook:{convert_bearing_to_eight_point_cardinal(f.relative_angle)}\nDistance:{round(f.ground_distance)}km"
@@ -109,9 +112,13 @@ async def handle_search(
     flight_rows = batch(list(enumerate(observations, 1)), n=4)
     keyboard_rows = []
     for row in flight_rows:
-        keyboard_rows.append(
-            [InlineKeyboardButton(index, callback_data=flight) for index, flight in row]
-        )
+        buttons = [
+            InlineKeyboardButton(
+                index, callback_data=AircraftInformationCallback(flight.aircraft)
+            )
+            for index, flight in row
+        ]
+        keyboard_rows.append(buttons)
 
     keyboard_rows.append(
         [
@@ -133,3 +140,10 @@ async def handle_search(
     )
 
     logging.info("Handler completed")
+
+
+async def invalid_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer(
+        text="This button has expired. Send me your location to start again.",
+        show_alert=True,
+    )

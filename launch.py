@@ -1,19 +1,16 @@
-from bot.bootstrap import bootstrap
+from bot.entrypoints.api import APIEntrypoint
+from bot.entrypoints.telegram import TelegramEntrypoint
 from config import settings
 
-app = bootstrap()
-method = settings.TELEGRAM.METHOD
-if method == "polling":
-    app.run_polling()
-elif method == "webhook":
-    # Need to sort out this config
-    url = settings.WEBHOOK_URL
-    secret_token = settings.SECRET_TOKEN
-    key = settings.KEY
-    cert = settings.CERT
+entrypoint = settings.ENTRYPOINT
 
-    app.run_webhook(port=8443, secret_token=secret_token, webhook_url=url)
+if entrypoint == "TELEGRAM":
+    app = TelegramEntrypoint()
+    app.launch()
+elif entrypoint == "API":
+    app = APIEntrypoint()
+    app.launch()
 else:
     raise ValueError(
-        "TELEGRAM_METHOD env var not set. Please set either 'polling' or 'webhook'."
+        "ENTRYPOINT env var not set. Please set either 'TELEGRAM' or 'API'."
     )

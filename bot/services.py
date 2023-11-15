@@ -1,9 +1,12 @@
+import base64
 from dataclasses import dataclass
+import dataclasses
+import json
 import math
-from uuid import UUID
-import plotly.express as px
 import numpy
 from math import sin, cos, sqrt, atan2, radians, cos, radians
+
+import wikipedia
 
 from dataclasses import dataclass
 import random
@@ -23,8 +26,47 @@ class FlightObservation:
     relative_angle: float
     ground_distance: float
     aircraft: str
+    aircraft_latitude: float
+    aircraft_longitude: float
+    callsign: str
     photo: Optional[str]
-    flight: Optional[Flight]
+
+
+@dataclass
+class FlightResponse:
+    observations: list[FlightObservation]
+    radar_map: bytes
+
+    def as_json(self):
+        observations_as_dict = [dataclasses.asdict(obs) for obs in self.observations]
+
+        radar_map_base64 = base64.b64encode(self.radar_map).decode("utf-8")
+
+        response_dict = {
+            "observations": observations_as_dict,
+            "radar_map": radar_map_base64,
+        }
+
+        return json.dumps(response_dict)
+
+
+@dataclass
+class AircraftInformationResponse:
+    name: str
+    description: str
+
+    def as_json(self):
+        return json.dumps(dataclasses.asdict(self))
+
+
+def GetFlights(current_pos: LatLong):
+    observations, radar_map = get_flights_near_user(current_pos)
+
+    return FlightResponse(observations, radar_map)
+
+
+def GetAircraftInformation(aircraft: str):
+    return AircraftInformationResponse(aircraft, wikipedia.summary(aircraft))
 
 
 def get_flights_near_user(current_pos: LatLong):
@@ -111,34 +153,13 @@ def get_boundaries(box: BoundingBox):
     )
 
 
-def add_flights_to_figure(fig, observations: list[FlightObservation]):
-    new_latitude_list = [f.flight.latitude for f in observations]
-    new_longitude_list = [f.flight.longitude for f in observations]
-    labels = [f.flight.callsign for f in observations]
-    print(labels)
-    headings = [f.heading for f in observations]
-    icons = [
-        f"assets/plane_icons/{convert_bearing_to_four_point_cardinal(h)}.png"
-        for h in headings
-    ]
-
-    fig.add_trace(
-        px.scatter_mapbox(
-            lat=new_latitude_list, lon=new_longitude_list, text=labels
-        ).data[0]
-    )
-
-    return fig
-
-
 def generate_base_map(box: BoundingBox, flights: list[FlightObservation]):
     """
     Generates a figure cropped to the bounding box.
     """
-    latitude_list = [f.flight.latitude for f in flights]
-    longitude_list = [f.flight.longitude for f in flights]
-    labels = [f"{f.flight.callsign}-{f.aircraft}" for f in flights]
-    markers = ["airport" for f in flights]
+    latitude_list = [f.aircraft_latitude for f in flights]
+    longitude_list = [f.aircraft_longitude for f in flights]
+    labels = [f"{f.callsign}-{f.aircraft}" for f in flights]
 
     fig = go.Figure(
         go.Scattermapbox(
@@ -222,7 +243,9 @@ def create_flight_observation(flight: Flight, user_pos: tuple[float, float]):
         ),
         aircraft=flight.aircraft_model,
         photo=photo,
-        flight=flight,
+        aircraft_latitude=flight.latitude,
+        aircraft_longitude=flight.longitude,
+        callsign=flight.callsign,
     )
 
 
