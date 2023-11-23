@@ -31,7 +31,7 @@ class APIEntrypoint(AbstractEntrypoint):
         self.app = quart
 
     def launch(self):
-        self.app.run()
+        self.app.run(host="0.0.0.0")
 
 
 async def get_flights():
