@@ -1,0 +1,7 @@
+### Request to get aircraft information
+POST http://localhost:5000/aircraft
+Content-Type: application/json
+
+{
+  "aircraft_name": "Boeing 737"
+}

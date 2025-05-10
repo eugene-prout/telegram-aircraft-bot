@@ -1,0 +1,15 @@
+services:
+  api:
+    extends:
+      file: api/compose.yaml
+      service: api
+
+  frontend:
+    extends:
+      file: frontend/compose.yaml
+      service: frontend
+
+  telegram:
+    extends:
+      file: telegram/compose.yaml
+      service: telegram
